@@ -1,0 +1,12 @@
+--Tendencias de temas por mes:
+SELECT topic_id, DATE_TRUNC('month', published_at) as month, COUNT(*) as total_articles
+FROM fact_article
+GROUP BY topic_id, month
+ORDER BY month DESC;
+
+-- Fuentes más influyentes:
+SELECT s.name, COUNT(a.article_id) as total_articles
+FROM fact_article a
+JOIN dim_news_source s ON a.source_id = s.source_id
+GROUP BY s.name
+ORDER BY total_articles DESC;
