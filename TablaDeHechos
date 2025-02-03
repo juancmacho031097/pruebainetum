@@ -1,0 +1,6 @@
+CREATE TABLE fact_article (
+    article_id INT PRIMARY KEY,
+    source_id INT REFERENCES dim_news_source(source_id),
+    topic_id INT REFERENCES dim_topic(topic_id),
+    published_at TIMESTAMP
+);
