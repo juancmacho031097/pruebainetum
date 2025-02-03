@@ -1,0 +1,53 @@
+from airflow import DAG
+from airflow.providers.amazon.aws.operators.lambda_function import AwsLambdaInvokeFunctionOperator
+from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
+from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
+from airflow.providers.amazon.aws.operators.quicksight import QuickSightCreateIngestionOperator
+from datetime import datetime
+
+default_args = {
+    'owner': 'diego',
+    'start_date': datetime(2024, 1, 1),
+    'retries': 1
+}
+
+dag = DAG('space_news_pipeline', default_args=default_args, schedule_interval='@daily')
+
+#  Ejecutar Lambda para extraer datos y almacenarlos en S3
+extract_data_lambda = AwsLambdaInvokeFunctionOperator(
+    task_id='invoke_lambda',
+    function_name='SpaceNewsDataExtractor',
+    aws_conn_id='aws_default',
+    invocation_type='Event',
+    dag=dag
+)
+
+# Ejecutar AWS Glue para procesar y limpiar los datos
+glue_job = GlueJobOperator(
+    task_id='run_glue_job',
+    job_name='space_news_processing',
+    aws_conn_id='aws_default',
+    dag=dag
+)
+
+# Cargar los datos transformados en Redshift
+load_to_redshift = RedshiftSQLOperator(
+    task_id='load_redshift',
+    redshift_conn_id='redshift_default',
+    sql="""
+        COPY fact_article
+        FROM 's3://datos-inetum/processed_data/'
+        IAM_ROLE 'arn:aws:iam::123456789012:role/MyRedshiftRole'
+        FORMAT AS PARQUET;
+    """,
+    dag=dag
+)
+
+# Refrescar datos en Amazon QuickSight
+refresh_quicksight = QuickSightCreateIngestionOperator(
+    task_id="refresh_quicksight",
+    aws_conn_id="aws_default",
+    data_set_id="dataset-space-news",
+    ingestion_id="refresh-ingestion",
+    dag=dag
+)
