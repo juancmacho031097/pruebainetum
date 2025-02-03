@@ -1,0 +1,11 @@
+CREATE TABLE dim_news_source (
+    source_id INT PRIMARY KEY,
+    name VARCHAR(255),
+    url VARCHAR(255),
+    reliability_score FLOAT
+);
+CREATE TABLE dim_topic (
+    topic_id INT PRIMARY KEY,
+    name VARCHAR(255),
+    category VARCHAR(255)
+);
